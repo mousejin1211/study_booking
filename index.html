@@ -1476,6 +1476,50 @@ function getTimeSlotsForDate(dateStr) {
 }
 
 // ══════════════════════════════════════════════════════
+// 연구자 고정 일정 차단
+// ══════════════════════════════════════════════════════
+function isBlockedSlot(dateStr, time) {
+  const d = new Date(dateStr + "T00:00:00");
+  const dow = d.getDay(); // 0=일,1=월,2=화,3=수,4=목,5=금,6=토
+  const [h, m] = time.split(":").map(Number);
+  const slotMin = h * 60 + m; // 슬롯 시작 분
+
+  // 슬롯이 차단 구간과 겹치는지 확인 (슬롯 시작이 차단 구간 안에 있으면 차단)
+  function inRange(startH, startM, endH, endM) {
+    const start = startH * 60 + startM;
+    const end   = endH * 60 + endM;
+    return slotMin >= start && slotMin < end;
+  }
+
+  // ── 매주 반복 차단 ──
+  // 월요일: 09:00 ~ 16:30 (16:30부터 가능 → 09:00~16:30 차단)
+  if (dow === 1 && inRange(9, 0, 16, 30)) return true;
+  // 목요일: 12:00 ~ 17:00
+  if (dow === 4 && inRange(12, 0, 17, 0)) return true;
+  // 화요일: 13:00 ~ 16:00
+  if (dow === 2 && inRange(13, 0, 16, 0)) return true;
+  // 수요일: 13:00 ~ 16:00
+  if (dow === 3 && inRange(13, 0, 16, 0)) return true;
+
+  // ── 특정 날짜 차단 ──
+  const month = d.getMonth() + 1;
+  const day   = d.getDate();
+
+  // 5월 6일(수): 16:00 ~ 18:30 (19:00 이전까지)
+  if (month === 5 && day === 6  && inRange(16, 0, 19, 0)) return true;
+  // 5월 10일: 12:00 이후
+  if (month === 5 && day === 10 && inRange(12, 0, 19, 0)) return true;
+  // 5월 16일: 12:00 이후
+  if (month === 5 && day === 16 && inRange(12, 0, 19, 0)) return true;
+  // 5월 23일: 12:00 이후
+  if (month === 5 && day === 23 && inRange(12, 0, 19, 0)) return true;
+  // 5월 24일: 12:00 이후
+  if (month === 5 && day === 24 && inRange(12, 0, 19, 0)) return true;
+
+  return false;
+}
+
+// ══════════════════════════════════════════════════════
 // 날짜 선택 → 시간 렌더링
 // ══════════════════════════════════════════════════════
 function selectDate(dateStr) {
@@ -1515,19 +1559,23 @@ function selectDate(dateStr) {
       if (slotTime <= now) isPast = true;
     }
 
+    // 연구자 고정 일정 차단 체크
+    const isBlocked = isBlockedSlot(dateStr, time);
+
     const el = document.createElement("div");
-    el.className = "time-slot" + (isFull ? " full" : "") + (isPast ? " past" : "");
+    el.className = "time-slot" + (isFull ? " full" : "") + (isPast ? " past" : "") + (isBlocked ? " past" : "");
 
     el.innerHTML = `
       <div class="time-main">${time}</div>
       <div class="time-avail">${
         isFull ? "마감" :
         isPast ? "지난 시간" :
+        isBlocked ? "예약 불가" :
         `<span class="avail-num">${avail}자리</span> 남음`
       }</div>
     `;
 
-    if (!isFull && !isPast) {
+    if (!isFull && !isPast && !isBlocked) {
       el.addEventListener("click", () => selectTime(time, el));
     }
 
