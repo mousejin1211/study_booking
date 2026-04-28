@@ -1529,6 +1529,8 @@ function isBlockedSlot(dateStr, time) {
   if (month === 5 && day === 23 && inRange(12, 0, 19, 0)) return true;
   // 5월 24일: 12:00 이후
   if (month === 5 && day === 24 && inRange(12, 0, 19, 0)) return true;
+  // 5월 30일: 전체
+  if (month === 5 && day === 30 && inRange(0, 0, 19, 0)) return true;
 
   return false;
 }
