@@ -326,6 +326,35 @@
     color: var(--ink);
   }
 
+  /* ── 성별 선택 ── */
+  .gender-group {
+    display: flex;
+    gap: 10px;
+  }
+  .gender-label {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--ink);
+    background: white;
+    transition: all 0.2s;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .gender-label:has(input:checked) {
+    border-color: var(--accent);
+    background: var(--accent-pale);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .gender-label input { display: none; }
+
   /* ── 사전 문항 ── */
   .screening-card {
     background: var(--danger-light);
@@ -1043,6 +1072,26 @@
     </div>
   </div>
 
+  <!-- 성별/나이 -->
+  <div class="form-row">
+    <div class="form-group">
+      <label>성별 <span>*</span></label>
+      <div class="gender-group">
+        <label class="gender-label">
+          <input type="radio" name="userGender" value="여"> 여
+        </label>
+        <label class="gender-label">
+          <input type="radio" name="userGender" value="남"> 남
+        </label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>나이 <span>*</span></label>
+      <input type="number" id="userAge" placeholder="만 나이 입력" min="18" max="100" autocomplete="off">
+      <span class="field-hint">만 나이로 숫자만 입력해 주세요</span>
+    </div>
+  </div>
+
   <div class="error-msg" id="consentError"></div>
 
   <button class="btn btn-primary" onclick="submitConsent()">
@@ -1197,6 +1246,8 @@ const state = {
   consentToken: null,
   userName: null,
   userPhone: null,
+  userGender: null,
+  userAge: null,
   bookingCounts: {},
   currentMonth: null,  // Date 객체
   selectedDate: null,  // "YYYY-MM-DD"
@@ -1312,6 +1363,15 @@ async function submitConsent() {
     return;
   }
 
+  // 성별/나이 확인
+  const genderEl = document.querySelector('input[name="userGender"]:checked');
+  if (!genderEl) { showError(errorEl, "성별을 선택해 주세요."); return; }
+  const age = parseInt(document.getElementById("userAge").value);
+  if (!age || age < 18 || age > 100) {
+    showError(errorEl, "만 나이를 정확히 입력해 주세요. (18세 이상)");
+    return;
+  }
+
   // 서버 전송
   const btn = document.querySelector("#sec-consent .btn-primary");
   btn.disabled = true;
@@ -1327,6 +1387,8 @@ async function submitConsent() {
       state.consentToken = result.token;
       state.userName = name;
       state.userPhone = phone;
+      state.userGender = genderEl.value;
+      state.userAge = age;
       goToStep(2);
       loadAvailability();
     } else {
@@ -1338,6 +1400,8 @@ async function submitConsent() {
       state.consentToken = "test-token";
       state.userName = name;
       state.userPhone = phone;
+      state.userGender = genderEl.value;
+      state.userAge = age;
       goToStep(2);
       loadAvailability();
     } else {
@@ -1529,8 +1593,6 @@ function isBlockedSlot(dateStr, time) {
   if (month === 5 && day === 23 && inRange(12, 0, 19, 0)) return true;
   // 5월 24일: 12:00 이후
   if (month === 5 && day === 24 && inRange(12, 0, 19, 0)) return true;
-  // 5월 30일: 전체
-  if (month === 5 && day === 30 && inRange(0, 0, 19, 0)) return true;
 
   return false;
 }
@@ -1642,10 +1704,11 @@ async function confirmBooking() {
       action: "submitBooking",
       name: state.userName,
       phone: state.userPhone,
+      gender: state.userGender,
+      age: state.userAge,
       date: state.selectedDate,
       time: state.selectedTime,
       token: state.consentToken,
-      // 예약 확정 시점에 동의 정보도 함께 전송
       consentName: state.userName,
       consentPhone: state.userPhone,
     });
