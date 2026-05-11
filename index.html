@@ -1601,6 +1601,8 @@ function isBlockedSlot(dateStr, time) {
   if (month === 5 && day === 10 && inRange(9, 0, 19, 0)) return true;
   // 5월 13일: 09:00 ~ 15:00 도미노 캠페인
   if (month === 5 && day === 13 && inRange(9, 0, 15, 0)) return true;
+   // 5월 13일: 09:00 ~ 14:00 스승의 날
+  if (month === 5 && day === 14 && inRange(9, 0, 14, 0)) return true;
   // 5월 16일: 14:00 이후
   if (month === 5 && day === 16 && inRange(14, 0, 19, 0)) return true;
   // 5월 23일: 12:00 이후
